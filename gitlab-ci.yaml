@@ -1,0 +1,35 @@
+variables:
+  gitlab_access: $gitlab_access
+  SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
+  EC2_HOST: $EC2_HOST
+
+stages:
+  - clone
+  - deploy
+# build:
+#  tags:
+#   - shell
+#  stage: build
+#  script: echo "$CI_SERVER_SHELL_SSH_HOST"
+clone:
+ stage: clone
+ script: 
+  - apt update -y
+  - apt install git -y
+  - git clone https://oauth2:$gitlab_access@gitlab.com/gitlab-ci8761407/testing.git
+  # taking output of this repo 
+ artifacts:
+    paths:
+      - testing/*
+deploy:
+  stage: deploy
+  script:
+    - apt update -y
+    - apt install -y rsync
+    # Create an SSH key file with appropriate permissions
+    - echo "$SSH_PRIVATE_KEY" > ssh_key.pem
+    - chmod 600 ssh_key.pem
+    # Extract the artifacts from the tarball
+    # - tar -xzf $ARTIFACTS_FILE
+    # Use rsync to copy artifacts to the EC2 instance
+    - rsync -e "ssh -i ssh_key.pem -o StrictHostKeyChecking=no" -r testing/ ubuntu@$EC2_HOST.compute-1.amazonaws.com:/home/ubuntu
